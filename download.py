@@ -1,9 +1,14 @@
-from helpers import input_adv, is_playlist_json_url
+import json
+from helpers import input_adv, is_playlist_json_url, parse_playlist_url
 
 playlist_url = input_adv(
     "playlist.json URL: ",
     validate=is_playlist_json_url,
 )
+
+parsed_playlist_url = parse_playlist_url(playlist_url)
+
+print(json.dumps(parsed_playlist_url, indent=4))
 
 print("Moving on ...")
 input()
