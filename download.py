@@ -1,7 +1,9 @@
 import json
 import sys
 import requests
-from helpers import input_adv, is_playlist_json_url, parse_playlist_url
+
+from helpers.general import input_adv
+from helpers.laracasts import is_playlist_json_url, parse_playlist_url
 
 playlist_url = input_adv(
     "playlist.json URL: ",
