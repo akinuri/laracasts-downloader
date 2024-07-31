@@ -15,3 +15,10 @@ def parse_playlist_url(playlist_url):
         "playlist" : parts[7],
     }
     return result
+
+def get_video_heights(playlist_json):
+    heights = []
+    for video in playlist_json["video"]:
+        heights.append(video["height"])
+    heights.sort()
+    return heights

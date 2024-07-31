@@ -3,7 +3,7 @@ import sys
 import requests
 
 from helpers.general import input_adv
-from helpers.laracasts import is_playlist_json_url, parse_playlist_url
+from helpers.laracasts import get_video_heights, is_playlist_json_url, parse_playlist_url
 
 playlist_url = input_adv(
     "playlist.json URL: ",
@@ -21,15 +21,32 @@ if playlist_response.ok is False:
     input()
     sys.exit()
 
-json_data = json.loads(playlist_response.text)
+playlist_json = json.loads(playlist_response.text)
 
-print(json.dumps(json_data, indent=4))
+print(json.dumps(playlist_json, indent=4))
+
+available_video_heights = get_video_heights(playlist_json)
+print("Select a video resolution:")
+for height in available_video_heights:
+    print("- %d" % height)
+def is_valid_video_height(input):
+    try:
+        input = int(input)
+    except:
+        input = 0
+    return input in available_video_heights
+selected_video_height = input_adv(
+    "Your choice: ",
+    validate=is_valid_video_height,
+)
+selected_video_height = int(selected_video_height)
+
+print("Selected video height: %d" % selected_video_height)
 
 print("Moving on ...")
 input()
 
 
-# TODO: select video
 # TODO: download video segments
 # TODO: merge video segments
 # TODO: select audio
