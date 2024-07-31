@@ -2,8 +2,8 @@ import json
 import sys
 import requests
 
-from helpers.general import input_adv
-from helpers.laracasts import get_video_heights, is_playlist_json_url, parse_playlist_url
+from helpers.general import get_dir_contents, input_adv
+from helpers.laracasts import download_video_segments, get_video_by_height, get_video_heights, is_playlist_json_url, parse_playlist_url
 
 
 playlist_url = input_adv(
@@ -44,11 +44,17 @@ selected_video_height = int(selected_video_height)
 print("Selected video height: %d" % selected_video_height)
 
 
+selected_video = get_video_by_height(playlist_json, selected_video_height)
+download_video_segments(selected_video, parsed_playlist_url)
+video_segments = get_dir_contents("segments/video")
+
+print(json.dumps(video_segments, indent=4))
+
+
 print("Moving on ...")
 input()
 
 
-# TODO: download video segments
 # TODO: merge video segments
 # TODO: select audio
 # TODO: download audio segments

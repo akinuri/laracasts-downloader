@@ -1,3 +1,5 @@
+import os
+
 def input_adv(
         prompt_text,
         allow_empty = False,
@@ -14,3 +16,10 @@ def input_adv(
             print(invalid_warning)
             value = input_adv(prompt_text, allow_empty, empty_warning, validate, invalid_warning)
     return value
+
+def get_dir_contents(dir_path, real_path=True):
+    item_names = [item_name for item_name in os.listdir(dir_path)]
+    item_names.sort()
+    if real_path:
+        item_names = [os.path.realpath(os.path.join(dir_path, item_name)) for item_name in item_names]
+    return item_names
