@@ -23,3 +23,9 @@ def get_dir_contents(dir_path, real_path=True):
     if real_path:
         item_names = [os.path.realpath(os.path.join(dir_path, item_name)) for item_name in item_names]
     return item_names
+
+def merge_files(file_paths, output_file_path):
+    with open(output_file_path, "wb") as outfile:
+        for file_path in file_paths:
+            with open(file_path, "rb") as infile:
+                outfile.write(infile.read())

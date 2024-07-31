@@ -2,7 +2,7 @@ import json
 import sys
 import requests
 
-from helpers.general import get_dir_contents, input_adv
+from helpers.general import get_dir_contents, input_adv, merge_files
 from helpers.laracasts import download_video_segments, get_video_by_height, get_video_heights, is_playlist_json_url, parse_playlist_url
 
 
@@ -51,11 +51,13 @@ video_segments = get_dir_contents("segments/video")
 print(json.dumps(video_segments, indent=4))
 
 
+merge_files(video_segments, "segments/video.mp4")
+
+
 print("Moving on ...")
 input()
 
 
-# TODO: merge video segments
 # TODO: select audio
 # TODO: download audio segments
 # TODO: merge audio segments
