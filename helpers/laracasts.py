@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import requests
@@ -9,6 +10,8 @@ from helpers.config import get_required_env
 # instead of Vimeo's playlist.json format. media.laracasts.com rejects
 # requests without a logged-in session's cookies, even with matching
 # browser headers, so callers must use the session from build_session().
+# Visiting an episode's page (fetch_page_json) refreshes the session's
+# lc_video_auth cookie for that specific video automatically.
 
 DEFAULT_HEADERS = {
     "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
@@ -23,8 +26,52 @@ def build_session():
     session = requests.Session()
     session.headers.update(DEFAULT_HEADERS)
     session.cookies.set("laracasts_session", get_required_env("LARACASTS_SESSION"), domain=".laracasts.com")
-    session.cookies.set("lc_video_auth", get_required_env("LC_VIDEO_AUTH"), domain=".laracasts.com")
     return session
+
+def is_course_url(value):
+    pattern = r"^https:\/\/laracasts\.com\/series\/[a-z0-9-]+\/?(?:\?.*)?$"
+    return bool(re.fullmatch(pattern, value))
+
+def normalize_course_url(value):
+    match = re.match(r"^https:\/\/laracasts\.com\/series\/[a-z0-9-]+", value)
+    return match.group(0)
+
+def build_absolute_url(path):
+    return urljoin("https://laracasts.com", path)
+
+def fetch_page_json(session, url):
+    response = session.get(url, timeout=30)
+    response.raise_for_status()
+    match = re.search(r'<script data-page="app" type="application/json">(.*?)</script>', response.text, re.S)
+    if not match:
+        raise RuntimeError("Could not find embedded page data at %s" % url)
+    return json.loads(match.group(1))
+
+def list_course_episodes(page_json):
+    episodes = []
+    for chapter in page_json["props"]["series"]["chapters"]:
+        for episode in chapter["episodes"]:
+            episodes.append({
+                "id" : episode["id"],
+                "chapter_number" : chapter["number"],
+                "chapter_heading" : chapter["heading"],
+                "position" : episode["position"],
+                "title" : episode["title"],
+                "path" : episode["path"],
+            })
+    return episodes
+
+def get_lesson_playback(page_json):
+    lesson = page_json["props"]["lesson"]
+    return lesson.get("cloudflarePlayback")
+
+def choose_closest_height(available_heights, desired_height):
+    if desired_height in available_heights:
+        return desired_height
+    lower_or_equal = [height for height in available_heights if height <= desired_height]
+    if lower_or_equal:
+        return max(lower_or_equal)
+    return min(available_heights)
 
 def is_master_playlist_url(value):
     pattern = r"^https:\/\/media\.laracasts\.com\/videos\/[A-Za-z0-9]+\/v\d+\/hls\/master\.m3u8(\?.*)?$"
@@ -85,7 +132,7 @@ def parse_media_playlist(m3u8_text):
         "segment_urls" : segment_urls,
     }
 
-def download_video_segments(session, media_playlist_url, media_playlist, segments_dir = "segments/video"):
+def download_video_segments(session, media_playlist_url, media_playlist, segments_dir = "work/video"):
     os.makedirs(segments_dir, exist_ok=True)
     segment_prefix = "segment"
     segment_count = len(media_playlist["segment_urls"])
@@ -110,9 +157,3 @@ def download_video_segments(session, media_playlist_url, media_playlist, segment
             str(index + 1).rjust(segment_digits, "0"),
         )
         open(segment_path, "wb").write(segment_response.content)
-
-def build_captions_url(master_playlist_url, language = "en"):
-    match = re.match(r"^(https:\/\/media\.laracasts\.com\/videos\/[A-Za-z0-9]+\/v\d+)\/hls\/master\.m3u8", master_playlist_url)
-    if not match:
-        return None
-    return "%s/captions/%s.vtt" % (match.group(1), language)
